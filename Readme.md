@@ -80,3 +80,14 @@
    - Go to your repository on GitHub, navigate to Settings > Pages, select the main branch, and click Save.
 
 Your site is now live at `https://username.github.io`. Push changes to the main branch to update your site.
+
+## configure bundle
+
+```bash
+bundle install
+
+jekyll build
+
+bundle exec jekyll serve --livereload
+
+```

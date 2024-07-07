@@ -1,0 +1,16 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+// Your custom CSS here
+body {
+  background-color: rgb(255, 255, 255);
+}
+.site-header {
+    border-top: none;
+}
+.wraper{
+    margin-right: 0;
+    margin-left: 0;
+}
