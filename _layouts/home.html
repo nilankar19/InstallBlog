@@ -247,7 +247,7 @@ layout: base
   let scrollfetch = true;
   if(scrollfetch){
   window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && ) {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 ){
        scrollfetch = loadMorePosts();
     }
   });
