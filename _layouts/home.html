@@ -1,0 +1,252 @@
+---
+layout: base
+---
+
+<style>
+  .home-container {
+    display: flex;
+    height: 100vh;
+  }
+  .left-sidebar {
+    /* flex: 1; */
+    width: 300px;
+    overflow-y: scroll;
+    padding: 20px;
+    border-right: 1px solid #eee;
+  }
+  .center-content {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .right-sidebar {
+    /* flex: 1; */
+    width: 256px;
+    padding: 20px;
+    border-left: 1px solid #eee;
+    overflow-y: auto;
+  }
+  .post-content {
+    padding: 20px;
+  }
+  .post-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  .post-list li {
+    margin-bottom: 20px;
+  }
+  .post-link {
+    font-size: 19px;
+    }
+  .pinned-posts {
+    margin-top: 20px;
+  }
+  .pinned-post {
+    margin-bottom: 10px;
+    font-size: 0.7em;
+  }
+  .pin-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: .6em;
+
+  }
+
+  #pageheading{
+    padding-left: 2%;
+    word-wrap: normal;
+    margin-bottom: 0;
+  }
+  #loading {
+    text-align: center;
+    padding: 20px;
+    display: none;
+  }
+  .flex-row-4{
+    display: flex;
+    gap: 2px;
+    flex-wrap: nowrap;
+  }
+  .pinned-post h3{
+    margin-bottom: 2px;
+  }
+  .right-sidebar .pinned-post {
+    overflow-y: scroll;
+  }
+  /* scrollbar */
+  ::-webkit-scrollbar {
+    display: none;
+    }
+    html {
+    scrollbar-width: none; /* Firefox */
+    }
+    body {
+    -ms-overflow-style: none; /* IE and Edge */
+    }
+</style>
+
+<div class="home-container">
+  <div class="left-sidebar">
+    <h2>Latest Posts</h2>
+    <ul class="post-list" id="post-list">
+      {% assign posts = site.posts | sort: 'date' | reverse %}
+      {% for post in posts limit:10 %}
+        <li>
+          <span class="post-meta">{{ post.date | date: site.minima.date_format }}</span>
+          <h3 class="flex-row-4">
+            <a class="post-link" href="{{ post.url | relative_url }}" onclick="loadPost(event, '{{ post.url | relative_url }}')">
+              {{ post.title | escape }}
+            </a>
+            <button class="pin-button" onclick="togglePin('{{ post.url | relative_url }}', '{{ post.title | escape }}', '{{ post.date | date: site.minima.date_format }}')">📌</button>
+          </h3>
+        </li>
+        <!-- get the latest post to show when home page load first -->
+        {% if forloop.first %}
+        <script>
+          var latestPostUrl = "{{ post.url | relative_url }}";
+        </script>
+      {% endif %}
+
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="center-content">
+    <h1 id="pageheading" class="page-heading"></h1>
+    {{ content }}
+    <div id="loading">Loading...</div>
+    <div id="post-content" class="post-content"></div>
+  </div>
+
+  <div class="right-sidebar">
+    <h2>Pinned Posts</h2>
+    <div id="pinned-posts" class="pinned-posts">
+      <!-- Pinned posts will be dynamically inserted here -->
+    </div>
+  </div>
+</div>
+
+<script>
+  let page = 1;
+  const postsPerPage = 10;
+
+  function loadPost(event, url) {
+    event.preventDefault();
+    const contentDiv = document.getElementById('post-content');
+    const loadingDiv = document.getElementById('loading');
+    const page_heading = document.getElementById("pageheading")
+    
+    contentDiv.innerHTML = '';
+    loadingDiv.style.display = 'block';
+
+    fetch(url)
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const blog_title = doc.querySelector('h1');
+        const datePublished =doc.querySelector('.dt-published');
+
+        const postContent = doc.querySelector('.post-content');
+        if (postContent) {
+            page_heading.textContent = blog_title.textContent;
+
+          contentDiv.innerHTML = `<time>${datePublished.textContent}</time><br><br> ` + postContent.innerHTML;
+        } else {
+          contentDiv.innerHTML = '<p>Error loading post content.</p>';
+        }
+        loadingDiv.style.display = 'none';
+      })
+      .catch(error => {
+        console.error('Error loading post:', error);
+        contentDiv.innerHTML = '<p>Error loading post content.</p>';
+        loadingDiv.style.display = 'none';
+      });
+  }
+
+  function loadMorePosts() {
+    page++;
+    fetch(`/api/posts?page=${page}&per_page=${postsPerPage}`)
+      .then(response => response.json())
+      .then(posts => {
+        const postList = document.getElementById('post-list');
+        posts.forEach(post => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <span class="post-meta">${new Date(post.date).toLocaleDateString()}</span>
+            <h3>
+              <a class="post-link" href="${post.url}" onclick="loadPost(event, '${post.url}')">
+                ${post.title}
+              </a>
+              <button class="pin-button" onclick="togglePin(${post.url}, '${post.title}', '${new Date(post.date).toLocaleDateString()}')">📌</button>
+            </h3>
+          `;
+          postList.appendChild(li);
+        });
+      });
+  }
+
+  function getPinnedPosts() {
+    const pinnedPosts = localStorage.getItem('pinnedPosts');
+    return pinnedPosts ? JSON.parse(pinnedPosts) : [];
+  }
+
+  function setPinnedPosts(posts) {
+    localStorage.setItem('pinnedPosts', JSON.stringify(posts));
+  }
+
+  function togglePin(postId, postTitle, postDate) {
+    console.log(postId);
+    let pinnedPosts = getPinnedPosts();
+    const index = pinnedPosts.findIndex(post => post.id === postId);
+
+    if (index > -1) {
+      pinnedPosts.splice(index, 1);
+    } else {
+      pinnedPosts.push({ id: postId, title: postTitle, date: postDate });
+    }
+
+    setPinnedPosts(pinnedPosts);
+    updatePinnedPostsDisplay();
+  }
+
+  function updatePinnedPostsDisplay() {
+    const pinnedPostsContainer = document.getElementById('pinned-posts');
+    pinnedPostsContainer.innerHTML = '';
+
+    const pinnedPosts = getPinnedPosts();
+    pinnedPosts.forEach(post => {
+      const postElement = document.createElement('div');
+      postElement.className = 'pinned-post';
+      postElement.innerHTML = `
+        <h3>
+          <a href="${post.id}" onclick="loadPost(event, '${post.id}')">
+            ${post.title}
+          </a>
+          <button class="pin-button" onclick="togglePin('${post.id}', '${post.title}', '${post.date}')">❌</button>
+        </h3>
+        <span class="post-meta">${post.date}</span>
+      `;
+      pinnedPostsContainer.appendChild(postElement);
+    });
+  }
+
+  window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+      loadMorePosts();
+    }
+  });
+
+ // Load the latest post when the page loads
+  window.addEventListener('DOMContentLoaded', (event) => {
+    if (typeof latestPostUrl !== 'undefined') {
+      loadPost(event, latestPostUrl);
+    }
+  });
+
+  // Initial load of pinned posts
+  updatePinnedPostsDisplay();
+</script>
