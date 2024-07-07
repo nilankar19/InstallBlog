@@ -1,32 +1,61 @@
 ---
 layout: post
-title:  "Docker alpine-postgres installation"
+title:  "PostgreSQL Alpine 16 Docker Installation Guide"
 date:   2024-07-07 08:39:12 +0530
 categories: jekyll update
 ---
 
-This is dummy content 👇
+#### Quick Start
 
-You’ll find this post in your `_posts` directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run `jekyll serve`, which launches a web server and auto-regenerates your site when a file is updated.
+```bash
+docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -d postgres:16.3-alpine3.20
+```
 
-Jekyll requires blog post files to be named according to the following format:
+#### Detailed Steps
 
-`YEAR-MONTH-DAY-title.MARKUP`
+1. **Pull the image**:
+   ```bash
+   docker pull postgres:16.3-alpine3.20
+   ```
 
-Where `YEAR` is a four-digit number, `MONTH` and `DAY` are both two-digit numbers, and `MARKUP` is the file extension representing the format used in the file. After that, include the necessary front matter. Take a look at the source for this post to get an idea about how it works.
+2. **Run the container**:
 
-Jekyll also offers powerful support for code snippets:
+   ```bash
+   # When running the PostgreSQL container for the first time using Docker, 
+   # you are required to set the environment variable POSTGRES_PASSWORD to your desired password for the PostgreSQL superuser.
 
-{% highlight ruby %}
-def print_hi(name)
-  puts "Hi, #{name}"
-end
-print_hi('Tom')
-#=> prints 'Hi, Tom' to STDOUT.
-{% endhighlight %}
+   docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -d postgres:16.3-alpine3.20
+   ```
 
-Check out the [Jekyll docs][jekyll-docs] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll Talk][jekyll-talk].
+3. **Connect to the database**:
+   ```bash
+   docker exec -it postgres16 psql -U postgres
+   ```
 
-[jekyll-docs]: https://jekyllrb.com/docs/home
-[jekyll-gh]:   https://github.com/jekyll/jekyll
-[jekyll-talk]: https://talk.jekyllrb.com/
+### Environment Variables
+
+- `POSTGRES_PASSWORD`: Set the superuser password (required)
+- `POSTGRES_USER`: Create a new superuser (default: postgres)
+- `POSTGRES_DB`: Specify the name of the default database (default: POSTGRES_USER value)
+
+### Persistence
+
+Mount a volume for data persistence:
+
+```bash
+docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -v /my/data:/var/lib/postgresql/data -d postgres:16-alpine
+```
+
+### Custom Configuration
+
+Mount a custom `postgresql.conf`:
+
+```bash
+docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -v /my/custom/postgresql.conf:/etc/postgresql/postgresql.conf -d postgres:16-alpine -c 'config_file=/etc/postgresql/postgresql.conf'
+```
+
+### Health Check
+
+```bash
+docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -d --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=5 postgres:16-alpine
+```

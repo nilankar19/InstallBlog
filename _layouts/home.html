@@ -168,26 +168,36 @@ layout: base
   }
 
   function loadMorePosts() {
-    page++;
-    fetch(`/api/posts?page=${page}&per_page=${postsPerPage}`)
-      .then(response => response.json())
-      .then(posts => {
-        const postList = document.getElementById('post-list');
-        posts.forEach(post => {
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <span class="post-meta">${new Date(post.date).toLocaleDateString()}</span>
-            <h3>
-              <a class="post-link" href="${post.url}" onclick="loadPost(event, '${post.url}')">
-                ${post.title}
-              </a>
-              <button class="pin-button" onclick="togglePin(${post.url}, '${post.title}', '${new Date(post.date).toLocaleDateString()}')">📌</button>
-            </h3>
-          `;
-          postList.appendChild(li);
-        });
+  page++;
+  fetch(`/api/posts?page=${page}&per_page=${postsPerPage}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(posts => {
+      const postList = document.getElementById('post-list');
+      posts.forEach(post => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="post-meta">${new Date(post.date).toLocaleDateString()}</span>
+          <h3>
+            <a class="post-link" href="${post.url}" onclick="loadPost(event, '${post.url}')">
+              ${post.title}
+            </a>
+            <button class="pin-button" onclick="togglePin(${post.url}, '${post.title}', '${new Date(post.date).toLocaleDateString()}')">📌</button>
+          </h3>
+        `;
+        postList.appendChild(li);
       });
-  }
+    })
+    .catch(error => {
+      console.error('Error loading more posts:', error);
+      page--; // Revert the page increment
+      return false;
+    });
+}
 
   function getPinnedPosts() {
     const pinnedPosts = localStorage.getItem('pinnedPosts');
@@ -234,12 +244,14 @@ layout: base
     });
   }
 
+  let scrollfetch = true;
+  if(scrollfetch){
   window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-      loadMorePosts();
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && ) {
+       scrollfetch = loadMorePosts();
     }
   });
-
+}
  // Load the latest post when the page loads
   window.addEventListener('DOMContentLoaded', (event) => {
     if (typeof latestPostUrl !== 'undefined') {
