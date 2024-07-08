@@ -86,10 +86,53 @@ layout: base
     body {
     -ms-overflow-style: none; /* IE and Edge */
     }
+    .zeroclipboard-container div {
+    position: relative;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0.5rem;
+    padding: 0 !important;
+    cursor: pointer;
+    user-select: none;
+    color: #4493f8;
+    background-color: transparent;
+    border: 0;
+    border-radius: 6px;
+    box-shadow: none;
+
+  }
+  .highlightcontainer{
+    display: flex;
+    justify-content: space-between;
+    overflow: auto !important;
+    position: relative !important;
+  }
+  .zeroclipboard-container{
+    display: block;
+  }
+  /* copy icon */
+  .copyIcon{
+    display: block;
+  }
+  .checkIcon {
+    display: none !important;
+  }
+  .code-blocks{
+    background: #eef;
+  }
+  pre{
+    border: none;
+  }
+
+
 </style>
 
 <div class="home-container">
-  <div class="left-sidebar">
+  <div id="leftsidebarid" class="left-sidebar">
     <h2>Latest Posts</h2>
     <ul class="post-list" id="post-list">
       {% assign posts = site.posts | sort: 'date' | reverse %}
@@ -159,9 +202,13 @@ layout: base
           contentDiv.innerHTML = '<p>Error loading post content.</p>';
         }
         loadingDiv.style.display = 'none';
+
+      }).then(()=>{
+        codevalue();
+        // console.log('loaded');
       })
       .catch(error => {
-        console.error('Error loading post:', error);
+        // console.error('Error loading post:', error);
         contentDiv.innerHTML = '<p>Error loading post content.</p>';
         loadingDiv.style.display = 'none';
       });
@@ -193,7 +240,7 @@ layout: base
       });
     })
     .catch(error => {
-      console.error('Error loading more posts:', error);
+      // console.error('Error loading more posts:', error);
       page--; // Revert the page increment
       return false;
     });
@@ -209,7 +256,7 @@ layout: base
   }
 
   function togglePin(postId, postTitle, postDate) {
-    console.log(postId);
+    // console.log(postId);
     let pinnedPosts = getPinnedPosts();
     const index = pinnedPosts.findIndex(post => post.id === postId);
 
@@ -244,14 +291,22 @@ layout: base
     });
   }
 
-  let scrollfetch = true;
-  if(scrollfetch){
-  window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 ){
-       scrollfetch = loadMorePosts();
+// load latest post  on scroll
+  let left_sidebar = document.querySelector('#leftsidebarid');
+  function handleScroll() {
+  // console.log('scroll begin', left_sidebar.clientHeight, left_sidebar.scrollTop);
+  if (left_sidebar.scrollHeight - left_sidebar.scrollTop <= left_sidebar.clientHeight + 100) {
+    let scrollfetch = loadMorePosts();
+    // console.log('scroll', scrollfetch);
+    
+    if (!scrollfetch) {
+      console.log('No more posts to load, removing scroll listener');
+      left_sidebar.removeEventListener('scroll', handleScroll);
     }
-  });
+  }
 }
+left_sidebar.addEventListener('scroll', handleScroll);
+
  // Load the latest post when the page loads
   window.addEventListener('DOMContentLoaded', (event) => {
     if (typeof latestPostUrl !== 'undefined') {
@@ -261,4 +316,97 @@ layout: base
 
   // Initial load of pinned posts
   updatePinnedPostsDisplay();
+</script>
+
+<!-- extract code value -->
+<script>
+function codevalue() {
+    // Select all elements containing the code blocks
+    var codeBlocks = document.querySelectorAll('div.language-bash div.highlight pre code');
+    var highlightDivs = document.querySelectorAll('div.language-bash div.highlight');
+    if (codeBlocks.length <=0){
+      highlightDivs = document.querySelectorAll('figure.highlight');
+      highlightDivs.forEach(function(highlightDiv) {
+        highlightDiv.classList.add('code-blocks');
+      })
+      codeBlocks = document.querySelectorAll('figure.highlight pre code');
+    }
+   
+
+    highlightDivs.forEach(function(highlightDiv) {
+     
+      highlightDiv.classList.add('highlightcontainer');
+
+    });
+
+    // Iterate over all code blocks
+    codeBlocks.forEach(function(codeBlock) {
+        // Get the inner text of the code block, which is the script value
+        var scriptValue = codeBlock.innerText;
+
+
+        // Create the clipboard button container
+        var clipboardContainer = document.createElement('div');
+        clipboardContainer.className = 'zeroclipboard-container';
+
+        // Create the clipboard button
+        var clipboardButton = document.createElement('div');
+        clipboardButton.setAttribute('aria-label', 'Copy');
+        clipboardButton.className = 'ClipboardButton btn btn-invisible js-clipboard-copy m-2 p-0 tooltipped-no-delay d-flex flex-justify-center flex-items-center';
+        clipboardButton.setAttribute('data-copy-feedback', 'Copied!');
+        clipboardButton.setAttribute('data-tooltip-direction', 'w');
+        clipboardButton.setAttribute('value', scriptValue);
+        clipboardButton.setAttribute('title','copy')
+
+        // Create the SVG icon for the clipboard button
+        var copyIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        copyIcon.setAttribute('aria-hidden', 'true');
+        copyIcon.setAttribute('height', '16');
+        copyIcon.setAttribute('viewBox', '0 0 16 16');
+        copyIcon.setAttribute('class','copyIcon')
+        
+        copyIcon.setAttribute('version', '1.1');
+        copyIcon.setAttribute('width', '16');
+        copyIcon.className = 'octicon octicon-copy js-clipboard-copy-icon';
+        copyIcon.innerHTML = '<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>';
+
+        var checkIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        checkIcon.setAttribute('aria-hidden', 'true');
+        checkIcon.setAttribute('height', '16');
+        checkIcon.setAttribute('viewBox', '0 0 16 16');
+        checkIcon.setAttribute('class','checkIcon')
+        checkIcon.setAttribute('version', '1.1');
+        checkIcon.setAttribute('width', '16');
+        checkIcon.className = 'octicon octicon-check js-clipboard-check-icon color-fg-success d-none';
+        checkIcon.innerHTML = '<path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>';
+
+        // Append the icon to the clipboard button
+        clipboardButton.appendChild(copyIcon);
+        clipboardButton.appendChild(checkIcon);
+
+        // Add click event to the clipboard button
+        clipboardButton.addEventListener('click', function() {
+            // Copy the code text to clipboard
+            navigator.clipboard.writeText(scriptValue).then(function() {
+                // Change icon to check
+                // console.log(scriptValue);
+                copyIcon.classList.add('checkIcon');
+                checkIcon.classList.remove('checkIcon');
+                // Revert icon back to copy after 1 second
+                setTimeout(function() {
+                    copyIcon.classList.remove('checkIcon');
+                    checkIcon.classList.add('checkIcon');
+                }, 1000);
+            });
+        });
+
+        // Append the clipboard button to the container
+        clipboardContainer.appendChild(clipboardButton);
+
+        // Insert the clipboard container after the <pre> tag
+        var preElement = codeBlock.closest('pre');
+        preElement.parentNode.insertBefore(clipboardContainer, preElement.nextSibling);
+    });
+
+}
 </script>
