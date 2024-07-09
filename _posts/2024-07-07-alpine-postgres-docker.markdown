@@ -26,6 +26,10 @@ docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -d postgres:1
 
    docker run --name postgres16 -e POSTGRES_PASSWORD=mysecretpassword -d postgres:16.3-alpine3.20
    ```
+   - `docker run`: Command to create and start a new Docker container.
+   - `--name postgres16`: Assigns a name (`postgres16`) to the container for easy reference.
+   - `-e POSTGRES_PASSWORD=mysecretpassword`: Sets an environment variable `POSTGRES_PASSWORD` inside the container with the value `mysecretpassword`. This is required to          set the password for the PostgreSQL superuser.
+   - `-d`: Runs the container in detached mode (in the background).
 
 3. **Connect to the database**:
    ```bash
